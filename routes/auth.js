@@ -1,4 +1,6 @@
 const express = require("express");
+const { check, body } = require("express-validator/check");
+const { MongoNetworkError } = require("mongodb");
 
 const authController = require("../controllers/auth");
 
@@ -10,7 +12,27 @@ router.get("/signup", authController.getSignup);
 
 router.post("/login", authController.postLogin);
 
-router.post("/signup", authController.postSignup);
+router.post(
+  "/signup",
+  [
+    check("email")
+      .isEmail()
+      .withMessage("Please enter a valid email !")
+      .custom((value, { req }) => {
+        if (value === "test@test.com") {
+          throw new Error("This email addres if forbidden.");
+        }
+        return true;
+      }),
+    body(
+      "password",
+      "Please enter a password with only number anda text atles 5 characters",
+    )
+      .isLength({ min: 5 })
+      .isAlphanumeric() 
+  ],
+  authController.postSignup,
+);
 
 router.post("/logout", authController.postLogout);
 
@@ -20,6 +42,6 @@ router.post("/reset", authController.postReset);
 
 router.get("/reset/:token", authController.getNewPassword);
 
-router.post('/new-password',authController.postNewPassword)
+router.post("/new-password", authController.postNewPassword);
 
 module.exports = router;
