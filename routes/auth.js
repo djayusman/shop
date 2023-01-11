@@ -1,6 +1,7 @@
 const express = require("express");
 const { check, body } = require("express-validator/check");
 const { MongoNetworkError } = require("mongodb");
+const User = require("../models/user");
 
 const authController = require("../controllers/auth");
 
@@ -19,17 +20,30 @@ router.post(
       .isEmail()
       .withMessage("Please enter a valid email !")
       .custom((value, { req }) => {
-        if (value === "test@test.com") {
-          throw new Error("This email addres if forbidden.");
-        }
-        return true;
+        // if (value === "test@test.com") {
+        //   throw new Error("This email addres if forbidden.");
+        // }
+        // return true;
+        return User.findOne({ email: value }).then((userDoc) => {
+          if (userDoc) {
+            return Promise.reject(
+              "E-mail sudah terdaftar, silakan gunakan email lain.",
+            );
+          }
+        });
       }),
     body(
       "password",
-      "Please enter a password with only number anda text atles 5 characters",
+      "Silakan masukan password setidaknya 5 karakter berisi angka atau huruf",
     )
       .isLength({ min: 5 })
-      .isAlphanumeric() 
+      .isAlphanumeric(),
+    body("confirmPassword").custom((value, { req }) => {
+      if (value !== req.body.password) {
+        throw new Error("Password tidak sama");
+      }
+      return true;
+    }),
   ],
   authController.postSignup,
 );
